@@ -59,30 +59,76 @@ Open [http://localhost:3000](http://localhost:3000) and you're on the tee box. �
 
 This app uses SQLite, so it needs a **persistent filesystem** — that rules out serverless platforms like Vercel. [Railway](https://railway.app) is the easiest option.
 
-### Step-by-step:
+### Step 1: Connect Your Repo
 
-1. **Fork this repo** (or push your own copy to GitHub)
+1. Sign up at [railway.app](https://railway.app) (free trial includes $5 credit — plenty for an office pool)
+2. Click **"New Project"** → **"Deploy from GitHub Repo"**
+3. Select your `masters-pick-6` repository
+4. Railway will immediately start building — let it run while you do the next steps
 
-2. **Create a new project on [Railway](https://railway.app)** → Deploy from GitHub repo
+### Step 2: Set Environment Variables
 
-3. **Add a persistent volume:**
-   - Go to your service → **Settings** → **Volumes**
-   - Mount path: `/data`
-   - This is where your SQLite database lives (survives redeploys)
+Click into your service → **Variables** tab → add these **4 variables**:
 
-4. **Set environment variables** (Settings → Variables):
+| Variable | Value | Why |
+|----------|-------|-----|
+| `JWT_SECRET` | *(see below)* | Signs auth tokens — keeps sessions secure |
+| `DATABASE_PATH` | `/data/masters-pick6.db` | Points to the persistent volume |
+| `NODE_ENV` | `production` | Enables production optimizations |
+| `PORT` | `3000` | Railway defaults to 8080, but Next.js listens on 3000 |
 
-   | Variable | Value |
-   |----------|-------|
-   | `JWT_SECRET` | Generate one: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
-   | `DATABASE_PATH` | `/data/masters-pick6.db` |
-   | `NODE_ENV` | `production` |
+**🔑 Generating your JWT_SECRET:**
 
-5. **Deploy** — Railway auto-detects Next.js, runs `npm run build` and `npm start`
+Run this in any terminal (VS Code, macOS Terminal, etc.):
 
-6. **You're live!** Share the Railway URL (or add a custom domain) with your pool members.
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
 
-> ☝️ **Important:** Each deployment starts with a fresh database. First person to register and create a pool becomes the admin. Choose wisely — or just be fast.
+Copy the output and paste it as the `JWT_SECRET` value. Use a **different** secret for production vs. local development.
+
+### Step 3: Add a Persistent Volume ⚠️ Critical
+
+Without a volume, your database (all users, pools, picks) gets **wiped on every redeploy**. This is the most important step.
+
+> ⚠️ Volumes are **NOT** in the service settings — they're added from the **project canvas**.
+
+1. Go back to the **main project view** (click your project name at the top)
+2. Click the **"+ New"** button on the canvas (or right-click on the canvas)
+3. Select **"Volume"**
+4. Set **Mount Path** to `/data`
+5. Click **"Attach volume to service"** → select `masters-pick-6`
+6. Save — Railway will redeploy automatically
+
+### Step 4: Set Up Public Networking
+
+1. Click into your service → **Settings** tab
+2. Scroll to **Networking** → **Public Networking**
+3. Click **"Generate Domain"** — Railway gives you a free HTTPS URL like:
+   ```
+   masters-pick-6-production.up.railway.app
+   ```
+4. ⚡ **Port:** Make sure the port is set to **3000** (or whatever you set in the `PORT` variable). Railway may default to 8080 — update it to match.
+
+That's your shareable link! Send it to your pool members.
+
+### Step 5 (Optional): Custom Domain
+
+If you own a domain (e.g., `masterspick6.golf` — `.golf` domains are ~$15/year):
+
+1. In **Settings → Networking**, click **"Custom Domain"** and enter your domain
+2. Railway shows you **2 DNS records** to add (a CNAME and a TXT record)
+3. Go to your domain registrar (Namecheap, GoDaddy, etc.) → DNS settings → add both records
+4. Wait ~10 minutes for DNS propagation
+5. Done — your custom domain now points to your app with automatic HTTPS
+
+> 💡 Not required — the free `.up.railway.app` URL works perfectly for an office pool.
+
+### 🎬 You're Live!
+
+Once deployed, visit your Railway URL. The first person to **register and create a pool** becomes the admin. Share the **invite code** with friends and start picking golfers.
+
+> ☝️ **Remember:** The production database is separate from your local dev database. Everyone starts fresh on the live site.
 
 ## 📁 Project Structure
 

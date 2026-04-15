@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import TournamentLogo from "@/components/TournamentLogo";
 import { ChartIcon, TargetIcon, FlagIcon } from "@/components/Icons";
 import { useTournament } from "@/components/TournamentProvider";
+import { getActiveTournaments } from "@/lib/tournaments/config";
 
 interface User {
   userId: string;
@@ -17,9 +18,11 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tournamentDropdown, setTournamentDropdown] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { tournament } = useTournament();
+  const { tournament, setTournament } = useTournament();
+  const allTournaments = getActiveTournaments();
 
   const fetchUser = useCallback(() => {
     fetch("/api/auth/me")
@@ -33,6 +36,7 @@ export default function Header() {
     fetchUser();
     setMenuOpen(false);
     setMobileOpen(false);
+    setTournamentDropdown(false);
   }, [fetchUser, pathname]);
 
   async function handleLogout() {
@@ -48,17 +52,67 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo / Title */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <TournamentLogo width={64} height={54} className="group-hover:scale-105 transition-transform" />
-            <div>
-              <h1 className="text-white font-bold text-lg leading-tight tracking-wide">
-                Pick Six Golf
-              </h1>
-              <p className="text-masters-yellow text-xs tracking-widest uppercase">
-                {tournament.name}
-              </p>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 group">
+              <TournamentLogo width={64} height={54} className="group-hover:scale-105 transition-transform" />
+              <div>
+                <h1 className="text-white font-bold text-lg leading-tight tracking-wide">
+                  Pick Six Golf
+                </h1>
+              </div>
+            </Link>
+            {/* Tournament selector */}
+            <div className="relative">
+              <button
+                onClick={() => setTournamentDropdown(!tournamentDropdown)}
+                className="flex items-center gap-1 bg-white/10 hover:bg-white/20 transition-colors rounded px-2 py-0.5 ml-1"
+              >
+                <span className="text-masters-yellow text-xs tracking-widest uppercase font-bold">
+                  {tournament.name}
+                </span>
+                <svg
+                  className={`w-3 h-3 text-masters-yellow/60 transition-transform ${tournamentDropdown ? "rotate-180" : ""}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {tournamentDropdown && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setTournamentDropdown(false)} />
+                  <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                    <p className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      Switch Tournament
+                    </p>
+                    {allTournaments.map((t) => (
+                      <button
+                        key={t.slug}
+                        onClick={() => {
+                          setTournament(t.slug);
+                          setTournamentDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                          t.slug === tournament.slug
+                            ? "bg-masters-cream font-bold text-gray-900"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: t.theme.primary }}
+                        />
+                        {t.name}
+                        {t.slug === tournament.slug && (
+                          <span className="ml-auto text-xs text-masters-green">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-          </Link>
+          </div>
 
           {/* Navigation */}
           <nav className="hidden sm:flex items-center gap-4">

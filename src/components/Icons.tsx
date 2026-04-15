@@ -152,21 +152,13 @@ export function GolferIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-/** Hand tap — for Join a Pool CTA */
+/** Arrow right circle — for Join a Pool CTA */
 export function ClickIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      {/* Tap burst lines */}
-      <path d="M12 1v3" />
-      <path d="M8.5 2.2l1 2.8" />
-      <path d="M15.5 2.2l-1 2.8" />
-      <path d="M6 4.5l1.8 2" />
-      <path d="M18 4.5l-1.8 2" />
-      {/* Index finger */}
-      <path d="M12 7v5" />
-      {/* Hand / fist */}
-      <path d="M8 14v-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-      <path d="M8 14c0 3 1.5 5 4 7c2.5-2 4-4 4-7" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8l4 4-4 4" />
+      <path d="M8 12h8" />
     </svg>
   );
 }

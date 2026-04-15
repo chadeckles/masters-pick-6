@@ -100,7 +100,7 @@ export default function Home() {
               <button
                 key={t.slug}
                 onClick={() => setTournament(t.slug)}
-                className={`text-left rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all card-hover border-2 ${
+                className={`text-left rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all card-hover border-2 flex flex-col h-full ${
                   isActive ? "border-current ring-2 ring-offset-2" : "border-transparent"
                 }`}
                 style={{
@@ -118,8 +118,8 @@ export default function Home() {
                   <h3 className="font-bold text-lg">{t.name}</h3>
                   <p className="text-sm" style={{ opacity: 0.7 }}>{dateStr}</p>
                 </div>
-                <div className="bg-white p-4">
-                  <p className="text-sm text-gray-600 mb-2">{t.description}</p>
+                <div className="bg-white p-4 flex flex-col flex-1">
+                  <p className="text-sm text-gray-600 mb-2 flex-1">{t.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">{t.course}</span>
                     {isActive && (

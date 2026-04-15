@@ -46,7 +46,7 @@ export default function Leaderboard() {
       {/* Header */}
       <div className="bg-masters-green green-pattern px-6 py-4 flex items-center justify-between">
         <h2 className="text-white font-bold text-lg flex items-center gap-2">
-          <FlagIcon className="w-5 h-5" /> Masters Leaderboard
+          <FlagIcon className="w-5 h-5" /> Leaderboard
         </h2>
         <div className="flex items-center gap-3">
           {lastUpdate && (

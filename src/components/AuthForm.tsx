@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { GolferIcon } from "@/components/Icons";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
@@ -53,10 +54,10 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-masters-green rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">⛳</span>
+            <GolferIcon className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
-            {mode === "register" ? "Join the Pool" : "Welcome Back"}
+            {mode === "register" ? "Create Account" : "Welcome Back"}
           </h2>
           <p className="text-gray-500 mt-1">
             {mode === "register"

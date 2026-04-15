@@ -140,7 +140,7 @@ export function CheckIcon({ className = "w-6 h-6" }: IconProps) {
   );
 }
 
-/** Golfer swing — for Join the Pool / Lock In Picks CTA */
+/** Golfer swing — for Lock In Picks CTA */
 export function GolferIcon({ className = "w-6 h-6" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -148,6 +148,18 @@ export function GolferIcon({ className = "w-6 h-6" }: IconProps) {
       <path d="M6 22l3-8 3 2v6" />
       <path d="M9 14l-2-3 6-4 4 1" />
       <path d="M17 8l3-6" />
+    </svg>
+  );
+}
+
+/** Mouse pointer click — for Join a Pool CTA */
+export function ClickIcon({ className = "w-6 h-6" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 9l-1.5 10 3-3.5L14 20l2-1-3.5-4.5L17 13z" />
+      <path d="M9 9V4a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v1" />
+      <path d="M3 9a6 6 0 0 1 6-6" />
+      <path d="M5 9a4 4 0 0 1 4-4" />
     </svg>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { GolferInfo, TieredGolfers } from "@/lib/types";
 import { CheckIcon, GolferIcon } from "@/components/Icons";
+import { useTournament } from "@/components/TournamentProvider";
 
 interface PickSelection {
   golferId: string;
@@ -11,39 +12,25 @@ interface PickSelection {
   tier: number;
 }
 
-const TIER_CONFIG = [
-  {
-    tier: 1,
-    label: "Tier 1 — Elite",
-    description: "OWGR 1–10. Pick 1.",
-    maxPicks: 1,
-    color: "masters-green",
-  },
-  {
-    tier: 2,
-    label: "Tier 2 — Contenders",
-    description: "OWGR 11–25. Pick 2.",
-    maxPicks: 2,
-    color: "cyan-600",
-  },
-  {
-    tier: 3,
-    label: "Tier 3 — Dark Horses",
-    description: "OWGR 26–50. Pick 2.",
-    maxPicks: 2,
-    color: "violet-600",
-  },
-  {
-    tier: 4,
-    label: "Tier 4 — Longshots",
-    description: "OWGR 51+. Pick 1.",
-    maxPicks: 1,
-    color: "orange-700",
-  },
-];
+function getTierConfig(tierLabels?: Record<number, { name: string; range: string; desc: string }>) {
+  const labels = tierLabels ?? {
+    1: { name: "Elite", range: "Top 10", desc: "" },
+    2: { name: "Contenders", range: "11-25", desc: "" },
+    3: { name: "Dark Horses", range: "26-50", desc: "" },
+    4: { name: "Longshots", range: "51+", desc: "" },
+  };
+  return [
+    { tier: 1, label: `Tier 1 — ${labels[1].name}`, description: `${labels[1].range}. Pick 1.`, maxPicks: 1, color: "masters-green" },
+    { tier: 2, label: `Tier 2 — ${labels[2].name}`, description: `${labels[2].range}. Pick 2.`, maxPicks: 2, color: "cyan-600" },
+    { tier: 3, label: `Tier 3 — ${labels[3].name}`, description: `${labels[3].range}. Pick 2.`, maxPicks: 2, color: "violet-600" },
+    { tier: 4, label: `Tier 4 — ${labels[4].name}`, description: `${labels[4].range}. Pick 1.`, maxPicks: 1, color: "orange-700" },
+  ];
+}
 
 export default function TierPicker() {
   const router = useRouter();
+  const { tournament } = useTournament();
+  const TIER_CONFIG = getTierConfig(tournament.tierLabels);
   const [tiers, setTiers] = useState<TieredGolfers | null>(null);
   const [selections, setSelections] = useState<PickSelection[]>([]);
   const [loading, setLoading] = useState(true);

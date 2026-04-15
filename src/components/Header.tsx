@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import MastersLogo from "@/components/MastersLogo";
-import { CURRENT_YEAR } from "@/lib/constants";
+import TournamentLogo from "@/components/TournamentLogo";
 import { ChartIcon, TargetIcon, FlagIcon } from "@/components/Icons";
+import { useTournament } from "@/components/TournamentProvider";
 
 interface User {
   userId: string;
@@ -19,6 +19,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { tournament } = useTournament();
 
   const fetchUser = useCallback(() => {
     fetch("/api/auth/me")
@@ -48,13 +49,13 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo / Title */}
           <Link href="/" className="flex items-center gap-2 group">
-            <MastersLogo width={64} height={54} showText={false} className="group-hover:scale-105 transition-transform" />
+            <TournamentLogo width={64} height={54} className="group-hover:scale-105 transition-transform" />
             <div>
               <h1 className="text-white font-bold text-lg leading-tight tracking-wide">
-                Masters Pick 6
+                Pick Six Golf
               </h1>
               <p className="text-masters-yellow text-xs tracking-widest uppercase">
-                {CURRENT_YEAR} Office Pool
+                {tournament.name}
               </p>
             </div>
           </Link>

@@ -365,7 +365,7 @@ export default function DashboardPage() {
                             onClick={() => setEditingLockDate(true)}
                             className="text-xs text-masters-green hover:underline"
                           >
-                            ✏️
+                            Edit
                           </button>
                         )}
                       </>

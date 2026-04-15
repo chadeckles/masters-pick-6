@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import MastersLogo from "@/components/MastersLogo";
+import TournamentLogo from "@/components/TournamentLogo";
 import { CURRENT_YEAR } from "@/lib/constants";
 import {
   UserIcon,
@@ -10,10 +10,22 @@ import {
   TrophyIcon,
   FlagIcon,
   ClipboardIcon,
-  GolferIcon,
+  ClickIcon,
 } from "@/components/Icons";
+import { useTournament } from "@/components/TournamentProvider";
+import { getActiveTournaments } from "@/lib/tournaments/config";
 
 export default function Home() {
+  const { tournament, setTournament } = useTournament();
+  const allTournaments = getActiveTournaments();
+
+  const tierLabels = tournament.tierLabels ?? {
+    1: { name: "Elite", range: "Top 10", desc: "The favorites." },
+    2: { name: "Contenders", range: "11-25", desc: "Strong players." },
+    3: { name: "Dark Horses", range: "26-50", desc: "Find the sleepers." },
+    4: { name: "Longshots", range: "51+", desc: "High risk, high reward." },
+  };
+
   return (
     <div>
       {/* Hero Section */}
@@ -22,21 +34,21 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
             <div className="w-2 h-2 bg-masters-yellow rounded-full animate-pulse" />
             <span className="text-masters-yellow text-sm font-medium">
-              The Masters — April {CURRENT_YEAR}
+              {tournament.fullName} — {CURRENT_YEAR}
             </span>
           </div>
 
-          <MastersLogo width={260} height={220} className="mx-auto mb-4 drop-shadow-lg" />
+          <TournamentLogo width={260} height={220} className="mx-auto mb-4 drop-shadow-lg" />
 
           <h1 className="text-4xl sm:text-6xl font-bold text-white mb-4 tracking-tight">
-            Masters Pick 6
+            Pick Six Golf
           </h1>
           <p className="text-xl sm:text-2xl text-masters-yellow font-medium mb-2">
-            The Ultimate Office Pool
+            {tournament.tagline}
           </p>
           <p className="text-white/80 text-lg max-w-2xl mx-auto mb-10">
             Pick 6 golfers across 4 tiers. Best 5 of 6 combined to-par scores
-            wins.
+            wins. Play with friends for any major championship.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -44,7 +56,7 @@ export default function Home() {
               href="/register"
               className="inline-flex items-center gap-2 bg-masters-yellow text-masters-green-dark px-8 py-4 rounded-xl text-lg font-bold hover:bg-yellow-300 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
             >
-              <GolferIcon className="w-5 h-5" /> Join the Pool
+              <ClickIcon className="w-5 h-5" /> Join a Pool
             </Link>
             <Link
               href="/leaderboard"
@@ -56,58 +68,117 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Tournament Selector */}
       <section className="max-w-5xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-          How It Works
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-3">
+          Choose Your Tournament
         </h2>
+        <p className="text-center text-gray-500 mb-10 max-w-2xl mx-auto">
+          Pick Six Golf runs pools for every major championship. Select a tournament to get started.
+        </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 stagger-children">
-          {[
-            {
-              step: "1",
-              title: "Register",
-              desc: "Create your account and join or create a pool with friends.",
-              icon: <UserIcon className="w-7 h-7 text-masters-green" />,
-            },
-            {
-              step: "2",
-              title: "Pick Your 6",
-              desc: "Draft one golfer per tier — see the tier breakdown below.",
-              icon: <TargetIcon className="w-7 h-7 text-masters-green" />,
-            },
-            {
-              step: "3",
-              title: "Watch & Track",
-              desc: "Follow live scoring on the dashboard as the Masters unfolds.",
-              icon: <ChartIcon className="w-7 h-7 text-masters-green" />,
-            },
-            {
-              step: "4",
-              title: "Win!",
-              desc: "Lowest combined to-par score from your best 5 of 6 picks wins.",
-              icon: <TrophyIcon className="w-7 h-7 text-masters-green" />,
-            },
-          ].map((item, idx) => (
-            <div
-              key={item.step}
-              className="text-center bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="w-14 h-14 bg-masters-cream rounded-full flex items-center justify-center mx-auto mb-4">
-                {item.icon}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+          {allTournaments.map((t) => {
+            const isActive = t.slug === tournament.slug;
+            const dates = t.dates[CURRENT_YEAR];
+            const monthNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const dateStr = dates
+              ? `${monthNames[dates.month]} ${dates.start}–${dates.end}, ${CURRENT_YEAR}`
+              : `${CURRENT_YEAR}`;
+
+            return (
+              <button
+                key={t.slug}
+                onClick={() => setTournament(t.slug)}
+                className={`text-left rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all card-hover border-2 ${
+                  isActive ? "border-current ring-2 ring-offset-2" : "border-transparent"
+                }`}
+                style={{
+                  borderColor: isActive ? t.theme.primary : "transparent",
+                  ...(isActive ? { ringColor: t.theme.primary } : {}),
+                }}
+              >
+                <div
+                  className="px-5 py-4 text-white"
+                  style={{ backgroundColor: t.theme.primary }}
+                >
+                  <h3 className="font-bold text-lg">{t.name}</h3>
+                  <p className="text-white/70 text-sm">{dateStr}</p>
+                </div>
+                <div className="bg-white p-4">
+                  <p className="text-sm text-gray-600 mb-2">{t.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">{t.course}</span>
+                    {isActive && (
+                      <span
+                        className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                        style={{ backgroundColor: t.theme.primary }}
+                      >
+                        Active
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="bg-white py-16">
+        <div className="max-w-5xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            How It Works
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 stagger-children">
+            {[
+              {
+                step: "1",
+                title: "Register",
+                desc: "Create your account and join or create a pool with friends.",
+                icon: <UserIcon className="w-7 h-7 text-masters-green" />,
+              },
+              {
+                step: "2",
+                title: "Pick Your 6",
+                desc: "Draft one golfer per tier — see the tier breakdown below.",
+                icon: <TargetIcon className="w-7 h-7 text-masters-green" />,
+              },
+              {
+                step: "3",
+                title: "Watch & Track",
+                desc: "Follow live scoring on the dashboard as the tournament unfolds.",
+                icon: <ChartIcon className="w-7 h-7 text-masters-green" />,
+              },
+              {
+                step: "4",
+                title: "Win!",
+                desc: "Lowest combined to-par score from your best 5 of 6 picks wins.",
+                icon: <TrophyIcon className="w-7 h-7 text-masters-green" />,
+              },
+            ].map((item, idx) => (
+              <div
+                key={item.step}
+                className="text-center bg-masters-cream rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                  {item.icon}
+                </div>
+                <div className="inline-flex items-center justify-center w-7 h-7 bg-masters-green text-white rounded-full text-sm font-bold mb-3">
+                  {item.step}
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm">{item.desc}</p>
               </div>
-              <div className="inline-flex items-center justify-center w-7 h-7 bg-masters-green text-white rounded-full text-sm font-bold mb-3">
-                {item.step}
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-              <p className="text-gray-500 text-sm">{item.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Tier Breakdown */}
-      <section className="bg-white py-16">
+      <section className="py-16">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
             Tier System
@@ -119,62 +190,37 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
             {[
-              {
-                tier: 1,
-                name: "Elite",
-                range: "Top 10",
-                picks: 1,
-                color: "bg-masters-green",
-                desc: "The favorites. Consistent but everyone wants them.",
-              },
-              {
-                tier: 2,
-                name: "Contenders",
-                range: "11-25",
-                picks: 2,
-                color: "bg-cyan-600",
-                desc: "Strong players who can surprise. Your backbone.",
-              },
-              {
-                tier: 3,
-                name: "Dark Horses",
-                range: "26-50",
-                picks: 2,
-                color: "bg-violet-600",
-                desc: "This is where pools are won. Find the sleepers.",
-              },
-              {
-                tier: 4,
-                name: "Longshots",
-                range: "51+",
-                picks: 1,
-                color: "bg-orange-700",
-                desc: "High risk, high reward. Augusta magic happens.",
-              },
-            ].map((tier) => (
-              <div
-                key={tier.tier}
-                className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow card-hover"
-              >
-                <div className={`${tier.color} px-4 py-3 text-center`}>
-                  <span className="text-white font-bold text-lg">
-                    Tier {tier.tier}
-                  </span>
-                  <span className="text-white/80 text-sm block">
-                    {tier.name}
-                  </span>
+              { tier: 1, picks: 1, color: "bg-masters-green" },
+              { tier: 2, picks: 2, color: "bg-cyan-600" },
+              { tier: 3, picks: 2, color: "bg-violet-600" },
+              { tier: 4, picks: 1, color: "bg-orange-700" },
+            ].map((t) => {
+              const label = tierLabels[t.tier];
+              return (
+                <div
+                  key={t.tier}
+                  className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow card-hover"
+                >
+                  <div className={`${t.color} px-4 py-3 text-center`}>
+                    <span className="text-white font-bold text-lg">
+                      Tier {t.tier}
+                    </span>
+                    <span className="text-white/80 text-sm block">
+                      {label?.name}
+                    </span>
+                  </div>
+                  <div className="bg-white p-4 text-center">
+                    <p className="font-bold text-gray-900 mb-1">
+                      Ranked {label?.range}
+                    </p>
+                    <p className="text-masters-green font-bold mb-2">
+                      Pick {t.picks}
+                    </p>
+                    <p className="text-gray-500 text-xs">{label?.desc}</p>
+                  </div>
                 </div>
-                <div className="bg-white p-4 text-center">
-                  <p className="font-bold text-gray-900 mb-1">
-                    Ranked {tier.range}
-                  </p>
-                  <p className="text-masters-green font-bold mb-2">
-                    Pick {tier.picks}
-                  </p>
-                  <p className="text-gray-500 text-xs">{tier.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

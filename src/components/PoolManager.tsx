@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { CURRENT_YEAR } from "@/lib/constants";
+import { TrophyIcon, FlagIcon, CopyIcon } from "@/components/Icons";
+import { useTournament } from "@/components/TournamentProvider";
 
 interface PoolManagerProps {
   onPoolReady: () => void;
 }
 
 export default function PoolManager({ onPoolReady }: PoolManagerProps) {
+  const { tournament } = useTournament();
   const [mode, setMode] = useState<"choose" | "create" | "join">("choose");
   const [poolName, setPoolName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -71,11 +74,11 @@ export default function PoolManager({ onPoolReady }: PoolManagerProps) {
     return (
       <div className="bg-white rounded-xl shadow-md p-8 max-w-md mx-auto text-center">
         <div className="w-16 h-16 bg-masters-green rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">🏆</span>
+          <TrophyIcon className="w-8 h-8 text-white" />
         </div>
         <h3 className="text-xl font-bold text-gray-900 mb-2">Pool Created!</h3>
         <p className="text-gray-600 mb-6">
-          Share this invite code with your friends:
+          Share this invite code with your group:
         </p>
         <div className="bg-masters-cream border-2 border-masters-green rounded-lg p-4 mb-6">
           <span className="text-2xl font-mono font-bold text-masters-green tracking-widest">
@@ -88,7 +91,7 @@ export default function PoolManager({ onPoolReady }: PoolManagerProps) {
           }}
           className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors mb-4 mr-2"
         >
-          📋 Copy Code
+          <CopyIcon className="w-4 h-4 inline-block mr-1" /> Copy Code
         </button>
         <button
           onClick={onPoolReady}
@@ -105,13 +108,13 @@ export default function PoolManager({ onPoolReady }: PoolManagerProps) {
       {mode === "choose" && (
         <div className="bg-white rounded-xl shadow-md p-8 text-center">
           <div className="w-16 h-16 bg-masters-yellow rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">⛳</span>
+            <FlagIcon className="w-8 h-8 text-masters-green" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">
             Join or Create a Pool
           </h3>
           <p className="text-gray-600 mb-6">
-            Get in on the action for the {CURRENT_YEAR} Masters
+            Get in on the action for the {CURRENT_YEAR} {tournament.name}
           </p>
           <div className="space-y-3">
             <button
@@ -155,7 +158,7 @@ export default function PoolManager({ onPoolReady }: PoolManagerProps) {
                 type="text"
                 value={poolName}
                 onChange={(e) => setPoolName(e.target.value)}
-                placeholder={`e.g. Office Masters Pool ${CURRENT_YEAR}`}
+                placeholder={`e.g. ${tournament.name} Pool ${CURRENT_YEAR}`}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-masters-green focus:border-transparent"
               />
             </div>

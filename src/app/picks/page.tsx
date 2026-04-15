@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import TierPicker from "@/components/TierPicker";
+import { TargetIcon } from "@/components/Icons";
+import { useTournament } from "@/components/TournamentProvider";
 
 export default function PicksPage() {
   const router = useRouter();
+  const { tournament } = useTournament();
   const [authorized, setAuthorized] = useState(false);
   const [hasPool, setHasPool] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,11 +79,11 @@ export default function PicksPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          🎯 Make Your Picks
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <TargetIcon className="w-6 h-6 text-masters-green" /> Make Your Picks
         </h1>
         <p className="text-gray-500 mt-1">
-          Select 6 golfers across 4 tiers. Your worst performer will be dropped.
+          Select 6 golfers across 4 tiers for the {tournament.name}. Your worst performer will be dropped.
         </p>
       </div>
 

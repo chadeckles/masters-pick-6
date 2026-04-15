@@ -1,31 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  /* Masters-inspired color palette */
-  --masters-green: #006747;
-  --masters-green-dark: #004d35;
-  --masters-green-light: #008c5f;
-  --masters-yellow: #f2c75c;
-  --masters-gold: #c8a951;
-  --masters-cream: #fdf8f0;
-  --masters-azalea: #d23669;
-  --masters-sky: #e8f4f8;
+  /* ─── Tournament theme (swapped dynamically via TournamentProvider) ─── */
+  --t-primary: #006747;
+  --t-primary-dark: #004d35;
+  --t-primary-light: #008c5f;
+  --t-accent: #f2c75c;
+  --t-accent-muted: #c8a951;
+  --t-cream: #fdf8f0;
+  --t-highlight: #d23669;
+  --t-sky: #e8f4f8;
 
   --foreground: #1a1a1a;
-  --background: #fdf8f0;
+  --background: var(--t-cream);
   --card-bg: #ffffff;
   --border: #e5e0d5;
 }
 
 @theme inline {
-  --color-masters-green: #006747;
-  --color-masters-green-dark: #004d35;
-  --color-masters-green-light: #008c5f;
-  --color-masters-yellow: #f2c75c;
-  --color-masters-gold: #c8a951;
-  --color-masters-cream: #fdf8f0;
-  --color-masters-azalea: #d23669;
-  --color-masters-sky: #e8f4f8;
+  /* Semantic tournament colors — resolved from CSS vars at runtime */
+  --color-t-primary: var(--t-primary);
+  --color-t-primary-dark: var(--t-primary-dark);
+  --color-t-primary-light: var(--t-primary-light);
+  --color-t-accent: var(--t-accent);
+  --color-t-accent-muted: var(--t-accent-muted);
+  --color-t-cream: var(--t-cream);
+  --color-t-highlight: var(--t-highlight);
+  --color-t-sky: var(--t-sky);
+
+  /* Keep legacy aliases so existing classes still work during migration */
+  --color-masters-green: var(--t-primary);
+  --color-masters-green-dark: var(--t-primary-dark);
+  --color-masters-green-light: var(--t-primary-light);
+  --color-masters-yellow: var(--t-accent);
+  --color-masters-gold: var(--t-accent-muted);
+  --color-masters-cream: var(--t-cream);
+  --color-masters-azalea: var(--t-highlight);
+  --color-masters-sky: var(--t-sky);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -44,13 +56,13 @@ body {
 
 /* Selection color */
 ::selection {
-  background-color: rgba(0, 103, 71, 0.2);
+  background-color: color-mix(in srgb, var(--t-primary) 20%, transparent);
   color: var(--foreground);
 }
 
 /* Focus-visible for accessibility */
 :focus-visible {
-  outline: 2px solid var(--masters-green);
+  outline: 2px solid var(--t-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -60,10 +72,10 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--masters-cream);
+  background: var(--t-cream);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--masters-green);
+  background: var(--t-primary);
   border-radius: 4px;
 }
 
@@ -106,7 +118,7 @@ body {
   color: white;
 }
 
-.tier-1 { background-color: #006747; }
+.tier-1 { background-color: var(--t-primary); }
 .tier-2 { background-color: #0891b2; }
 .tier-3 { background-color: #7c3aed; }
 .tier-4 { background-color: #c2410c; }

@@ -55,7 +55,8 @@ export interface PickWithScore {
 }
 
 // ESPN API response shapes
-// Note: The data shape changes between pre-tournament (simplified) and in-tournament (full)
+// Note: The data shape changes between pre-tournament, in-tournament, and
+// between the generic /scoreboard vs event-specific /leaderboard endpoints.
 export interface ESPNCompetitor {
   id: string;
   uid: string;
@@ -71,22 +72,40 @@ export interface ESPNCompetitor {
   status?: {
     type: {
       id: string;
-      name: string; // "STATUS_ACTIVE", "STATUS_CUT", etc.
+      name: string; // "STATUS_ACTIVE", "STATUS_CUT", "STATUS_FINISH", etc.
+      state?: string; // "pre", "in", "post"
+      completed?: boolean;
     };
     period: number;
     displayValue: string; // "F", "1", "2", etc.
+    thru?: number;
+    displayThru?: string;
+    // Event-specific leaderboard API includes position in status
+    position?: {
+      id: string;
+      displayName: string; // "T9", "1", "CUT"
+      isTie: boolean;
+    };
   };
   // Pre-tournament: score is a string like "E"
-  // In-tournament: score is { value, displayValue }
+  // In-tournament / post: score is { value, displayValue }
   score:
     | string
     | {
         displayValue: string;
         value: number;
       };
-  linescores?: { period?: number; value?: number; displayValue?: string }[];
+  // Each entry = one round. value = raw strokes (e.g. 72), displayValue = to-par (e.g. "E")
+  // Cut players may have { value: 0, displayValue: "-" } for unplayed rounds.
+  linescores?: {
+    period?: number;
+    value?: number;
+    displayValue?: string;
+  }[];
   statistics?: { name: string; displayValue: string }[];
   sortOrder?: number;
+  movement?: number;
+  earnings?: number;
 }
 
 export interface ESPNLeaderboardResponse {

@@ -169,3 +169,26 @@ export function getGolfersInTier(tier: number): TierEntry[] {
     default: return [];
   }
 }
+
+/**
+ * Get a Set of all ESPN athlete IDs in the Masters field.
+ * Used to filter ESPN results to only players actually in the tournament.
+ */
+export function getAllMastersPlayerIds(): Set<string> {
+  return new Set(
+    [...TIER_1, ...TIER_2, ...TIER_3, ...TIER_4].map((g) => g.espnId)
+  );
+}
+
+/**
+ * Get a Map of ESPN athlete ID → TierEntry for all Masters field players.
+ */
+export function getMastersFieldMap(): Map<string, TierEntry> {
+  const map = new Map<string, TierEntry>();
+  for (const tier of [TIER_1, TIER_2, TIER_3, TIER_4]) {
+    for (const g of tier) {
+      map.set(g.espnId, g);
+    }
+  }
+  return map;
+}

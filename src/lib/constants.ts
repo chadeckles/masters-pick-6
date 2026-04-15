@@ -3,6 +3,20 @@
  */
 export const CURRENT_YEAR = new Date().getFullYear();
 
+/** Par for Augusta National Golf Club */
+export const AUGUSTA_PAR = 72;
+
+/**
+ * Known Masters Tournament ESPN event IDs by year.
+ * Used to fetch event-specific leaderboard data instead of relying on the
+ * generic scoreboard endpoint (which only shows the current week's event).
+ */
+export const MASTERS_EVENT_IDS: Record<number, string> = {
+  2025: "401580344",
+  2026: "401811941",
+  2027: "401811957", // placeholder — update when ESPN publishes calendar
+};
+
 /**
  * Masters Tournament dates.
  * The Masters doesn't follow a simple "second week of April" rule —

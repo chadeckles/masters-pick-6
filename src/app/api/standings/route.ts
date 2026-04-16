@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { calculateStandings } from "@/lib/scoring";
@@ -6,27 +6,30 @@ import { calculateStandings } from "@/lib/scoring";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const db = getDb();
+  const { searchParams } = new URL(req.url);
+  let poolId = searchParams.get("poolId");
 
-  interface UserRow {
-    pool_id: string | null;
+  if (!poolId) {
+    // Legacy fallback: use first pool
+    const db = getDb();
+    const membership = db
+      .prepare("SELECT pool_id FROM pool_members WHERE user_id = ? LIMIT 1")
+      .get(session.userId) as { pool_id: string } | undefined;
+    poolId = membership?.pool_id || null;
   }
-  const user = db
-    .prepare("SELECT pool_id FROM users WHERE id = ?")
-    .get(session.userId) as UserRow | undefined;
 
-  if (!user?.pool_id) {
+  if (!poolId) {
     return NextResponse.json({ standings: [] });
   }
 
   try {
-    const standings = await calculateStandings(user.pool_id);
+    const standings = await calculateStandings(poolId);
     return NextResponse.json({ standings });
   } catch (err) {
     console.error("Standings error:", err);

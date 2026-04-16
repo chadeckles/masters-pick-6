@@ -40,7 +40,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const { tournament } = useTournament();
   const [user, setUser] = useState<{ userId: string; name: string } | null>(null);
-  const [pool, setPool] = useState<PoolInfo | null>(null);
+  const [pools, setPools] = useState<PoolInfo[]>([]);
+  const [activePoolId, setActivePoolId] = useState<string | null>(null);
   const [picks, setPicks] = useState<UserPick[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -51,12 +52,14 @@ export default function DashboardPage() {
   const [editingLockDate, setEditingLockDate] = useState(false);
   const [lockDateInput, setLockDateInput] = useState("");
 
-  async function fetchAll() {
+  // Derive active pool from state
+  const pool = pools.find((p) => p.id === activePoolId) || null;
+
+  async function fetchAll(selectedPoolId?: string) {
     try {
-      const [meRes, poolRes, picksRes] = await Promise.all([
+      const [meRes, poolRes] = await Promise.all([
         fetch("/api/auth/me"),
         fetch("/api/pool"),
-        fetch("/api/picks"),
       ]);
 
       const meData = await meRes.json();
@@ -67,18 +70,29 @@ export default function DashboardPage() {
       setUser(meData.user);
 
       const poolData = await poolRes.json();
-      setPool(poolData.pool);
-      if (poolData.pool) {
-        setPaymentLink(poolData.pool.paymentLink || "");
-        setPaymentLabel(poolData.pool.paymentLabel || "Pay Entry Fee");
-        setEntryFee(poolData.pool.entryFee || "");
-        // Format lock date for datetime-local input
-        const ld = new Date(poolData.pool.lockDate);
-        setLockDateInput(ld.toISOString().slice(0, 16));
-      }
+      const allPools: PoolInfo[] = poolData.pools || (poolData.pool ? [poolData.pool] : []);
+      setPools(allPools);
 
-      const picksData = await picksRes.json();
-      setPicks(picksData.picks || []);
+      // Determine which pool to show
+      const targetId = selectedPoolId || activePoolId || allPools[0]?.id || null;
+      setActivePoolId(targetId);
+
+      if (targetId) {
+        const targetPool = allPools.find((p) => p.id === targetId);
+        if (targetPool) {
+          setPaymentLink(targetPool.paymentLink || "");
+          setPaymentLabel(targetPool.paymentLabel || "Pay Entry Fee");
+          setEntryFee(targetPool.entryFee || "");
+          const ld = new Date(targetPool.lockDate);
+          setLockDateInput(ld.toISOString().slice(0, 16));
+        }
+
+        const picksRes = await fetch(`/api/picks?poolId=${targetId}`);
+        const picksData = await picksRes.json();
+        setPicks(picksData.picks || []);
+      } else {
+        setPicks([]);
+      }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -96,7 +110,7 @@ export default function DashboardPage() {
       await fetch("/api/pool", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentLink, paymentLabel, entryFee }),
+        body: JSON.stringify({ poolId: pool?.id, paymentLink, paymentLabel, entryFee }),
       });
       setShowPaymentSetup(false);
       fetchAll();
@@ -110,7 +124,7 @@ export default function DashboardPage() {
       await fetch("/api/pool", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ togglePaidUserId: userId }),
+        body: JSON.stringify({ poolId: pool?.id, togglePaidUserId: userId }),
       });
       fetchAll();
     } catch (err) {
@@ -123,7 +137,7 @@ export default function DashboardPage() {
       await fetch("/api/pool", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lockDate: new Date(lockDateInput).toISOString() }),
+        body: JSON.stringify({ poolId: pool?.id, lockDate: new Date(lockDateInput).toISOString() }),
       });
       setEditingLockDate(false);
       fetchAll();
@@ -159,35 +173,66 @@ export default function DashboardPage() {
               Welcome, {user.name}!
             </h1>
             <p className="text-gray-500 mt-1">
-              {pool
-                ? `Pool: ${pool.name}`
+              {pools.length > 0
+                ? `${pools.length} pool${pools.length > 1 ? "s" : ""} active`
                 : "Join or create a pool to get started"}
             </p>
           </div>
-          {pool && (
-            <div className="flex items-center gap-3">
-              {!isLocked && (
-                <Link
-                  href="/picks"
-                  className="bg-t-primary text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-t-primary-dark transition-colors"
-                >
-                  {picks.length > 0 ? "Edit Picks" : "Make Picks"}
-                </Link>
-              )}
+          <div className="flex items-center gap-3">
+            {pool && !isLocked && (
               <Link
-                href="/leaderboard"
-                className="bg-t-cream text-t-primary px-5 py-2 rounded-lg font-bold text-sm hover:bg-t-accent/30 transition-colors border border-t-primary/20"
+                href={`/picks?poolId=${pool.id}`}
+                className="bg-t-primary text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-t-primary-dark transition-colors"
               >
-                Leaderboard
+                {picks.length > 0 ? "Edit Picks" : "Make Picks"}
               </Link>
-            </div>
-          )}
+            )}
+            <Link
+              href="/leaderboard"
+              className="bg-t-cream text-t-primary px-5 py-2 rounded-lg font-bold text-sm hover:bg-t-accent/30 transition-colors border border-t-primary/20"
+            >
+              Leaderboard
+            </Link>
+          </div>
         </div>
       </div>
 
+      {/* Pool selector tabs (multi-pool) */}
+      {pools.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {pools.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => {
+                setActivePoolId(p.id);
+                fetchAll(p.id);
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                p.id === activePoolId
+                  ? "bg-t-primary text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setActivePoolId(null);
+              setPools([]);
+              setPicks([]);
+              fetchAll();
+            }}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-t-primary bg-t-cream hover:bg-t-accent/30 transition-colors border border-t-primary/20"
+          >
+            + Join / Create Pool
+          </button>
+        </div>
+      )}
+
       {/* Pool info or Pool Manager */}
       {!pool ? (
-        <PoolManager onPoolReady={fetchAll} />
+        <PoolManager onPoolReady={() => fetchAll()} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column: Pool details + My picks */}
@@ -448,7 +493,7 @@ export default function DashboardPage() {
 
           {/* Right column: Pool Standings */}
           <div className="lg:col-span-2">
-            <PoolStandings />
+            <PoolStandings poolId={pool.id} />
           </div>
         </div>
       )}

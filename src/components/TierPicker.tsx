@@ -27,7 +27,7 @@ function getTierConfig(tierLabels?: Record<number, { name: string; range: string
   ];
 }
 
-export default function TierPicker() {
+export default function TierPicker({ poolId }: { poolId?: string } = {}) {
   const router = useRouter();
   const { tournament } = useTournament();
   const TIER_CONFIG = getTierConfig(tournament.tierLabels);
@@ -43,7 +43,7 @@ export default function TierPicker() {
     try {
       const [tierRes, picksRes] = await Promise.all([
         fetch(`/api/leaderboard?tiered=true&tournament=${tournament.slug}`),
-        fetch("/api/picks"),
+        fetch(`/api/picks${poolId ? `?poolId=${poolId}` : ""}`),
       ]);
       const tierData = await tierRes.json();
       const picksData = await picksRes.json();
@@ -106,7 +106,7 @@ export default function TierPicker() {
       const res = await fetch("/api/picks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ picks: selections }),
+        body: JSON.stringify({ picks: selections, poolId }),
       });
 
       const data = await res.json();

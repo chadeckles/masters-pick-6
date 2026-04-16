@@ -35,22 +35,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user is already in a pool
-    interface UserRow {
-      pool_id: string | null;
+    // Check if user is already in this pool
+    interface MemberRow {
+      user_id: string;
     }
-    const user = db
-      .prepare("SELECT pool_id FROM users WHERE id = ?")
-      .get(session.userId) as UserRow | undefined;
+    const existing = db
+      .prepare("SELECT user_id FROM pool_members WHERE user_id = ? AND pool_id = ?")
+      .get(session.userId, pool.id) as MemberRow | undefined;
 
-    if (user?.pool_id) {
+    if (existing) {
       return NextResponse.json(
-        { error: "You are already in a pool. Leave your current pool first." },
+        { error: "You are already in this pool." },
         { status: 400 }
       );
     }
 
-    db.prepare("UPDATE users SET pool_id = ? WHERE id = ?").run(
+    db.prepare("INSERT INTO pool_members (user_id, pool_id) VALUES (?, ?)").run(
+      session.userId,
+      pool.id
+    );
+    // Legacy compat
+    db.prepare("UPDATE users SET pool_id = ? WHERE id = ? AND pool_id IS NULL").run(
       pool.id,
       session.userId
     );

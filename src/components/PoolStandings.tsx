@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Fragment } from "react";
 import type { PoolEntry } from "@/lib/types";
 import { TrophyIcon } from "@/components/Icons";
 
-export default function PoolStandings() {
+export default function PoolStandings({ poolId }: { poolId?: string } = {}) {
   const [standings, setStandings] = useState<PoolEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -12,7 +12,8 @@ export default function PoolStandings() {
 
   const fetchStandings = useCallback(async () => {
     try {
-      const res = await fetch("/api/standings");
+      const url = poolId ? `/api/standings?poolId=${poolId}` : "/api/standings";
+      const res = await fetch(url);
       const data = await res.json();
       if (data.standings) {
         setStandings(data.standings);
@@ -23,7 +24,7 @@ export default function PoolStandings() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [poolId]);
 
   useEffect(() => {
     fetchStandings();

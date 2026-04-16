@@ -12,12 +12,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { picks } = await req.json();
+    const { picks, poolId } = await req.json();
     // picks: Array<{ golferId: string; golferName: string; tier: number }>
 
     if (!picks || !Array.isArray(picks)) {
       return NextResponse.json(
         { error: "Picks array is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!poolId) {
+      return NextResponse.json(
+        { error: "poolId is required" },
         { status: 400 }
       );
     }
@@ -53,17 +60,14 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
 
-    // Check user has a pool
-    interface UserRow {
-      pool_id: string | null;
-    }
-    const user = db
-      .prepare("SELECT pool_id FROM users WHERE id = ?")
-      .get(session.userId) as UserRow | undefined;
+    // Verify user is a member of this pool
+    const membership = db
+      .prepare("SELECT user_id FROM pool_members WHERE user_id = ? AND pool_id = ?")
+      .get(session.userId, poolId);
 
-    if (!user?.pool_id) {
+    if (!membership) {
       return NextResponse.json(
-        { error: "You must join a pool first" },
+        { error: "You must join this pool first" },
         { status: 400 }
       );
     }
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
     const pool = db
       .prepare("SELECT lock_date FROM pools WHERE id = ?")
-      .get(user.pool_id) as PoolRow | undefined;
+      .get(poolId) as PoolRow | undefined;
 
     if (pool && new Date(pool.lock_date) <= new Date()) {
       return NextResponse.json(
@@ -92,12 +96,12 @@ export async function POST(req: NextRequest) {
     );
 
     const transaction = db.transaction(() => {
-      deletePicks.run(session.userId, user.pool_id);
+      deletePicks.run(session.userId, poolId);
       for (const pick of picks) {
         insertPick.run(
           uuid(),
           session.userId,
-          user.pool_id,
+          poolId,
           pick.tier,
           pick.golferId,
           pick.golferName
@@ -118,23 +122,31 @@ export async function POST(req: NextRequest) {
 }
 
 // Get current user's picks
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const poolId = searchParams.get("poolId");
+
   const db = getDb();
 
-  interface UserRow {
-    pool_id: string | null;
-  }
-  const user = db
-    .prepare("SELECT pool_id FROM users WHERE id = ?")
-    .get(session.userId) as UserRow | undefined;
-
-  if (!user?.pool_id) {
-    return NextResponse.json({ picks: [] });
+  if (!poolId) {
+    // Legacy: return picks for first pool
+    const membership = db
+      .prepare("SELECT pool_id FROM pool_members WHERE user_id = ? LIMIT 1")
+      .get(session.userId) as { pool_id: string } | undefined;
+    if (!membership) {
+      return NextResponse.json({ picks: [] });
+    }
+    const picks = db
+      .prepare("SELECT id, tier, golfer_id, golfer_name FROM picks WHERE user_id = ? AND pool_id = ? ORDER BY tier")
+      .all(session.userId, membership.pool_id) as { id: string; tier: number; golfer_id: string; golfer_name: string }[];
+    return NextResponse.json({
+      picks: picks.map((p) => ({ id: p.id, tier: p.tier, golferId: p.golfer_id, golferName: p.golfer_name })),
+    });
   }
 
   interface PickRow {
@@ -147,7 +159,7 @@ export async function GET() {
     .prepare(
       "SELECT id, tier, golfer_id, golfer_name FROM picks WHERE user_id = ? AND pool_id = ? ORDER BY tier"
     )
-    .all(session.userId, user.pool_id) as PickRow[];
+    .all(session.userId, poolId) as PickRow[];
 
   return NextResponse.json({
     picks: picks.map((p) => ({

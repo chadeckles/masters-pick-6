@@ -35,8 +35,13 @@ export async function POST(req: NextRequest) {
       "INSERT INTO pools (id, name, invite_code, admin_user_id, lock_date, tournament_slug) VALUES (?, ?, ?, ?, ?, ?)"
     ).run(id, name, inviteCode, session.userId, lock, slug);
 
-    // Auto-join the creator
-    db.prepare("UPDATE users SET pool_id = ? WHERE id = ?").run(
+    // Auto-join the creator via pool_members
+    db.prepare("INSERT INTO pool_members (user_id, pool_id) VALUES (?, ?)").run(
+      session.userId,
+      id
+    );
+    // Legacy compat: also set users.pool_id if they don't have one
+    db.prepare("UPDATE users SET pool_id = ? WHERE id = ? AND pool_id IS NULL").run(
       id,
       session.userId
     );
@@ -51,23 +56,28 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Get current user's pool info
-export async function GET() {
+// Get current user's pools (multi-pool)
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const db = getDb();
-  interface UserPoolRow {
-    pool_id: string | null;
-  }
-  const user = db
-    .prepare("SELECT pool_id FROM users WHERE id = ?")
-    .get(session.userId) as UserPoolRow | undefined;
 
-  if (!user?.pool_id) {
-    return NextResponse.json({ pool: null });
+  // Optional: filter to a specific pool
+  const { searchParams } = new URL(req.url);
+  const poolIdParam = searchParams.get("poolId");
+
+  interface MembershipRow {
+    pool_id: string;
+  }
+  const memberships = db
+    .prepare("SELECT pool_id FROM pool_members WHERE user_id = ?")
+    .all(session.userId) as MembershipRow[];
+
+  if (memberships.length === 0) {
+    return NextResponse.json({ pool: null, pools: [] });
   }
 
   interface PoolRow {
@@ -81,49 +91,68 @@ export async function GET() {
     entry_fee: string | null;
     tournament_slug: string | null;
   }
-  const pool = db
-    .prepare("SELECT * FROM pools WHERE id = ?")
-    .get(user.pool_id) as PoolRow | undefined;
 
   interface MemberRow {
     id: string;
     name: string;
     email: string;
   }
-  const members = db
-    .prepare("SELECT id, name, email FROM users WHERE pool_id = ?")
-    .all(user.pool_id) as MemberRow[];
 
   interface PaymentRow {
     user_id: string;
     paid: number;
   }
-  const payments = db
-    .prepare("SELECT user_id, paid FROM pool_payments WHERE pool_id = ?")
-    .all(user.pool_id) as PaymentRow[];
-  const paidMap = new Map(payments.map((p) => [p.user_id, p.paid === 1]));
 
-  return NextResponse.json({
-    pool: pool
-      ? {
-          id: pool.id,
-          name: pool.name,
-          inviteCode: pool.invite_code,
-          adminUserId: pool.admin_user_id,
-          lockDate: pool.lock_date,
-          paymentLink: pool.payment_link || null,
-          paymentLabel: pool.payment_label || "Pay Entry Fee",
-          entryFee: pool.entry_fee || null,
-          tournamentSlug: pool.tournament_slug || "masters",
-          members: members.map((m) => ({
-            id: m.id,
-            name: m.name,
-            email: m.email,
-            paid: paidMap.get(m.id) ?? false,
-          })),
-        }
-      : null,
-  });
+  function buildPool(pool: PoolRow) {
+    const members = db
+      .prepare(
+        "SELECT u.id, u.name, u.email FROM users u JOIN pool_members pm ON pm.user_id = u.id WHERE pm.pool_id = ?"
+      )
+      .all(pool.id) as MemberRow[];
+
+    const payments = db
+      .prepare("SELECT user_id, paid FROM pool_payments WHERE pool_id = ?")
+      .all(pool.id) as PaymentRow[];
+    const paidMap = new Map(payments.map((p) => [p.user_id, p.paid === 1]));
+
+    return {
+      id: pool.id,
+      name: pool.name,
+      inviteCode: pool.invite_code,
+      adminUserId: pool.admin_user_id,
+      lockDate: pool.lock_date,
+      paymentLink: pool.payment_link || null,
+      paymentLabel: pool.payment_label || "Pay Entry Fee",
+      entryFee: pool.entry_fee || null,
+      tournamentSlug: pool.tournament_slug || "masters",
+      members: members.map((m) => ({
+        id: m.id,
+        name: m.name,
+        email: m.email,
+        paid: paidMap.get(m.id) ?? false,
+      })),
+    };
+  }
+
+  // If specific pool requested, return just that one
+  if (poolIdParam) {
+    const pool = db.prepare("SELECT * FROM pools WHERE id = ?").get(poolIdParam) as PoolRow | undefined;
+    if (!pool) {
+      return NextResponse.json({ pool: null, pools: [] });
+    }
+    const built = buildPool(pool);
+    return NextResponse.json({ pool: built, pools: [built] });
+  }
+
+  // Return all pools
+  const poolIds = memberships.map((m) => m.pool_id);
+  const pools = poolIds
+    .map((pid) => db.prepare("SELECT * FROM pools WHERE id = ?").get(pid) as PoolRow | undefined)
+    .filter(Boolean)
+    .map((p) => buildPool(p!));
+
+  // For backward compat, `pool` returns the first pool
+  return NextResponse.json({ pool: pools[0] || null, pools });
 }
 
 // Update pool settings (admin only)
@@ -134,43 +163,38 @@ export async function PATCH(req: NextRequest) {
   }
 
   const db = getDb();
-  interface UserPoolRow {
-    pool_id: string | null;
-  }
-  const user = db
-    .prepare("SELECT pool_id FROM users WHERE id = ?")
-    .get(session.userId) as UserPoolRow | undefined;
-
-  if (!user?.pool_id) {
-    return NextResponse.json({ error: "No pool found" }, { status: 404 });
-  }
-
-  interface PoolAdminRow {
-    admin_user_id: string;
-  }
-  const pool = db
-    .prepare("SELECT admin_user_id FROM pools WHERE id = ?")
-    .get(user.pool_id) as PoolAdminRow | undefined;
-
-  if (pool?.admin_user_id !== session.userId) {
-    return NextResponse.json({ error: "Only pool admin can update settings" }, { status: 403 });
-  }
 
   try {
-    const { paymentLink, paymentLabel, entryFee, togglePaidUserId, lockDate } = await req.json();
+    const { poolId, paymentLink, paymentLabel, entryFee, togglePaidUserId, lockDate } = await req.json();
+
+    if (!poolId) {
+      return NextResponse.json({ error: "poolId is required" }, { status: 400 });
+    }
+
+    // Verify user is admin of this pool
+    interface PoolAdminRow {
+      admin_user_id: string;
+    }
+    const pool = db
+      .prepare("SELECT admin_user_id FROM pools WHERE id = ?")
+      .get(poolId) as PoolAdminRow | undefined;
+
+    if (!pool || pool.admin_user_id !== session.userId) {
+      return NextResponse.json({ error: "Only pool admin can update settings" }, { status: 403 });
+    }
 
     // Toggle a member's paid status
     if (togglePaidUserId) {
       const existing = db
         .prepare("SELECT paid FROM pool_payments WHERE pool_id = ? AND user_id = ?")
-        .get(user.pool_id, togglePaidUserId) as { paid: number } | undefined;
+        .get(poolId, togglePaidUserId) as { paid: number } | undefined;
 
       if (existing) {
         db.prepare("UPDATE pool_payments SET paid = ?, marked_by = ?, marked_at = datetime('now') WHERE pool_id = ? AND user_id = ?")
-          .run(existing.paid === 1 ? 0 : 1, session.userId, user.pool_id, togglePaidUserId);
+          .run(existing.paid === 1 ? 0 : 1, session.userId, poolId, togglePaidUserId);
       } else {
         db.prepare("INSERT INTO pool_payments (pool_id, user_id, paid, marked_by, marked_at) VALUES (?, ?, 1, ?, datetime('now'))")
-          .run(user.pool_id, togglePaidUserId, session.userId);
+          .run(poolId, togglePaidUserId, session.userId);
       }
 
       return NextResponse.json({ success: true });
@@ -199,7 +223,7 @@ export async function PATCH(req: NextRequest) {
       }
 
       if (updates.length > 0) {
-        values.push(user.pool_id);
+        values.push(poolId);
         db.prepare(`UPDATE pools SET ${updates.join(", ")} WHERE id = ?`).run(...values);
       }
     }

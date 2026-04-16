@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import TierPicker from "@/components/TierPicker";
 import { TargetIcon } from "@/components/Icons";
 import { useTournament } from "@/components/TournamentProvider";
 import TournamentBar from "@/components/TournamentBar";
 
-export default function PicksPage() {
+function PicksContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const poolId = searchParams.get("poolId");
   const { tournament } = useTournament();
   const [authorized, setAuthorized] = useState(false);
   const [hasPool, setHasPool] = useState(false);
+  const [poolName, setPoolName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,8 +33,11 @@ export default function PicksPage() {
         }
         setAuthorized(true);
 
-        if (poolData.pool) {
+        const pools = poolData.pools || (poolData.pool ? [poolData.pool] : []);
+        if (pools.length > 0) {
           setHasPool(true);
+          const target = poolId ? pools.find((p: { id: string }) => p.id === poolId) : pools[0];
+          if (target) setPoolName(target.name);
         }
       } catch (err) {
         console.error("Auth check error:", err);
@@ -41,7 +47,7 @@ export default function PicksPage() {
       }
     }
     check();
-  }, [router]);
+  }, [router, poolId]);
 
   if (loading) {
     return (
@@ -86,12 +92,20 @@ export default function PicksPage() {
           <TargetIcon className="w-6 h-6 text-t-primary" /> Make Your Picks
         </h1>
         <p className="text-gray-500 mt-1">
-          Select 6 golfers across 4 tiers for the {tournament.name}. Your worst performer will be dropped.
+          Select 6 golfers across 4 tiers for the {tournament.name}.{poolName ? ` Pool: ${poolName}.` : ""} Your worst performer will be dropped.
         </p>
       </div>
 
-      <TierPicker />
+      <TierPicker poolId={poolId || undefined} />
     </div>
     </>
+  );
+}
+
+export default function PicksPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto px-4 py-8 animate-pulse"><div className="h-8 bg-gray-200 rounded w-48" /></div>}>
+      <PicksContent />
+    </Suspense>
   );
 }

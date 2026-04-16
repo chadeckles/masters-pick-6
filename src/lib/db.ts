@@ -91,4 +91,27 @@ function initSchema(db: Database.Database) {
   if (!poolColNames.has("tournament_slug")) {
     db.exec("ALTER TABLE pools ADD COLUMN tournament_slug TEXT DEFAULT 'masters'");
   }
+
+  // Migrate: add pool_members junction table for multi-pool support
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pool_members (
+      user_id TEXT NOT NULL,
+      pool_id TEXT NOT NULL,
+      joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, pool_id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (pool_id) REFERENCES pools(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pool_members_user ON pool_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_pool_members_pool ON pool_members(pool_id);
+  `);
+
+  // Migrate existing users.pool_id data into pool_members
+  const migrated = db.prepare("SELECT COUNT(*) as c FROM pool_members").get() as { c: number };
+  if (migrated.c === 0) {
+    db.exec(`
+      INSERT OR IGNORE INTO pool_members (user_id, pool_id)
+      SELECT id, pool_id FROM users WHERE pool_id IS NOT NULL
+    `);
+  }
 }

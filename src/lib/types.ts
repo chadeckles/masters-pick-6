@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   passwordHash: string;
-  poolId: string | null;
+  poolId: string | null; // legacy — prefer pool_members
   createdAt: string;
 }
 

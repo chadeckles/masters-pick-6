@@ -27,10 +27,11 @@ function getTierConfig(tierLabels?: Record<number, { name: string; range: string
   ];
 }
 
-export default function TierPicker({ poolId }: { poolId?: string } = {}) {
+export default function TierPicker({ poolId: poolIdProp }: { poolId?: string } = {}) {
   const router = useRouter();
   const { tournament } = useTournament();
   const TIER_CONFIG = getTierConfig(tournament.tierLabels);
+  const [poolId, setPoolId] = useState<string | undefined>(poolIdProp);
   const [tiers, setTiers] = useState<TieredGolfers | null>(null);
   const [selections, setSelections] = useState<PickSelection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,9 +42,18 @@ export default function TierPicker({ poolId }: { poolId?: string } = {}) {
 
   const fetchData = useCallback(async () => {
     try {
+      // Resolve poolId if not provided
+      let resolvedPoolId = poolId;
+      if (!resolvedPoolId) {
+        const poolRes = await fetch("/api/pool");
+        const poolData = await poolRes.json();
+        resolvedPoolId = poolData.pool?.id;
+        if (resolvedPoolId) setPoolId(resolvedPoolId);
+      }
+
       const [tierRes, picksRes] = await Promise.all([
         fetch(`/api/leaderboard?tiered=true&tournament=${tournament.slug}`),
-        fetch(`/api/picks${poolId ? `?poolId=${poolId}` : ""}`),
+        fetch(`/api/picks${resolvedPoolId ? `?poolId=${resolvedPoolId}` : ""}`),
       ]);
       const tierData = await tierRes.json();
       const picksData = await picksRes.json();

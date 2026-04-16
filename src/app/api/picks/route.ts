@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { picks, poolId } = await req.json();
+    let { picks, poolId } = await req.json();
     // picks: Array<{ golferId: string; golferName: string; tier: number }>
 
     if (!picks || !Array.isArray(picks)) {
@@ -22,9 +22,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Resolve poolId from pool_members if not provided
+    if (!poolId) {
+      const db = getDb();
+      const membership = db
+        .prepare("SELECT pool_id FROM pool_members WHERE user_id = ? LIMIT 1")
+        .get(session.userId) as { pool_id: string } | undefined;
+      poolId = membership?.pool_id;
+    }
+
     if (!poolId) {
       return NextResponse.json(
-        { error: "poolId is required" },
+        { error: "You must join a pool first" },
         { status: 400 }
       );
     }

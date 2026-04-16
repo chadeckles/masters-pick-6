@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [entryFee, setEntryFee] = useState("");
   const [editingLockDate, setEditingLockDate] = useState(false);
   const [lockDateInput, setLockDateInput] = useState("");
+  const [showCreateJoin, setShowCreateJoin] = useState(false);
 
   // Derive active pool from state
   const pool = pools.find((p) => p.id === activePoolId) || null;
@@ -197,43 +198,74 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Pool selector tabs (multi-pool) */}
-      {pools.length > 1 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {pools.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                setActivePoolId(p.id);
-                fetchAll(p.id);
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-                p.id === activePoolId
-                  ? "bg-t-primary text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+      {/* My Pools list — always visible */}
+      <div className="card">
+        <div className="card-header flex items-center justify-between">
+          <h2 className="text-white font-bold flex items-center gap-2">🏌️ My Pools</h2>
           <button
-            onClick={() => {
-              setActivePoolId(null);
-              setPools([]);
-              setPicks([]);
-              fetchAll();
-            }}
-            className="px-4 py-2 rounded-lg text-sm font-bold text-t-primary bg-t-cream hover:bg-t-accent/30 transition-colors border border-t-primary/20"
+            onClick={() => setShowCreateJoin(!showCreateJoin)}
+            className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg transition-colors"
           >
-            + Join / Create Pool
+            + Join / Create
           </button>
         </div>
+        <div className="p-4">
+          {pools.length === 0 && !showCreateJoin ? (
+            <div className="text-center py-6">
+              <p className="text-gray-500 mb-3">You&apos;re not in any pools yet.</p>
+              <button
+                onClick={() => setShowCreateJoin(true)}
+                className="bg-t-primary text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-t-primary-dark transition-colors"
+              >
+                Join or Create a Pool
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pools.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setActivePoolId(p.id);
+                    setShowCreateJoin(false);
+                    fetchAll(p.id);
+                  }}
+                  className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-colors ${
+                    p.id === activePoolId && !showCreateJoin
+                      ? "bg-t-primary/10 border border-t-primary/30"
+                      : "hover:bg-gray-50 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-t-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-t-primary font-bold text-xs">{p.members.length}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm text-gray-900">{p.name}</span>
+                      <span className="text-xs text-gray-400 block">{p.members.length} member{p.members.length !== 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+                  {p.id === activePoolId && !showCreateJoin && (
+                    <span className="text-xs font-bold text-t-primary bg-t-cream px-2 py-0.5 rounded">Active</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create/Join form (shown inline) */}
+      {showCreateJoin && (
+        <PoolManager onPoolReady={() => { setShowCreateJoin(false); fetchAll(); }} />
       )}
 
-      {/* Pool info or Pool Manager */}
-      {!pool ? (
-        <PoolManager onPoolReady={() => fetchAll()} />
-      ) : (
+      {/* Pool info or empty state */}
+      {!pool && !showCreateJoin ? (
+        pools.length === 0 ? null : (
+          <p className="text-center text-gray-400">Select a pool above to view details.</p>
+        )
+      ) : pool && !showCreateJoin ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column: Pool details + My picks */}
           <div className="space-y-6">
@@ -463,7 +495,7 @@ export default function DashboardPage() {
                     </p>
                     {!isLocked && (
                       <Link
-                        href="/picks"
+                        href={`/picks?poolId=${pool.id}`}
                         className="text-t-primary font-bold text-sm hover:underline"
                       >
                         Make your picks →
@@ -496,7 +528,7 @@ export default function DashboardPage() {
             <PoolStandings poolId={pool.id} />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
     </>
   );

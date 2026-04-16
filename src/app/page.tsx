@@ -50,7 +50,7 @@ export default function Home() {
           </p>
           <p className="text-white/80 text-lg max-w-2xl mx-auto mb-10">
             Pick 6 golfers across 4 tiers. Best 5 of 6 combined to-par scores
-            wins. Play with friends for any major championship.
+            wins. Run a pool with friends or manage multiple across the biggest events in golf.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -76,7 +76,7 @@ export default function Home() {
           Choose Your Tournament
         </h2>
         <p className="text-center text-gray-500 mb-10 max-w-2xl mx-auto">
-          Pick Six Golf runs pools for every major championship. Select a tournament to get started.
+          Pick Six Golf runs pools for every major championship. Create separate pools for each tournament, or run multiple pools for the same one.
         </p>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
@@ -152,7 +152,7 @@ export default function Home() {
               {
                 step: "1",
                 title: "Register",
-                desc: "Create your account and join or create a pool with friends.",
+                desc: "Create your account and join or create pools — run as many as you want.",
                 icon: <UserIcon className="w-7 h-7 text-t-primary" />,
               },
               {

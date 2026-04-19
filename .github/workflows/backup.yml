@@ -58,12 +58,16 @@ jobs:
           set -euo pipefail
           STAMP=$(date -u +"%Y-%m-%d_%H-%M-%S")
           OUT="pick6-${STAMP}.db.gz"
+          # Strip any trailing slash from APP_URL so we don't end up with //api
+          BASE="${APP_URL%/}"
           echo "Fetching backup → ${OUT}"
-          # --fail: non-2xx becomes a non-zero exit
+          # --fail-with-body: non-2xx becomes a non-zero exit but keeps the body for debugging
+          # --location: follow 301/302 redirects (http→https, apex→www, etc.)
           # --silent + --show-error: quiet on success, loud on failure
           # --retry: survive a transient blip
           HTTP_CODE=$(curl \
-              --fail \
+              --fail-with-body \
+              --location \
               --silent \
               --show-error \
               --retry 3 \
@@ -72,7 +76,7 @@ jobs:
               --write-out "%{http_code}" \
               --output "$OUT" \
               --header "Authorization: Bearer ${BACKUP_API_KEY}" \
-              "${APP_URL}/api/admin/backup")
+              "${BASE}/api/admin/backup")
           echo "HTTP status: $HTTP_CODE"
 
           # Sanity-check: a valid gzip starts with 1f 8b

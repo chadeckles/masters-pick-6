@@ -383,7 +383,27 @@ ESPN API is the single point of failure. Check:
 `BACKUP_API_KEY` in the GitHub secret doesn't match the one on Railway.
 They must be **byte-identical** (watch for trailing newlines when pasting).
 
-### Backup workflow fails with "not gzip"
+### Backup workflow fails with "not gzip (header=)" and HTTP 301/302
+Your `APP_URL` secret doesn't match the canonical domain the app actually
+serves on — something (Railway, Cloudflare, a custom domain) is issuing a
+redirect that curl can't safely follow with the auth header attached.
+
+Diagnose:
+```bash
+curl -I https://<whatever-APP_URL-is-set-to>/api/admin/backup
+```
+Read the `Location:` header — that's what `APP_URL` should be. Common
+causes:
+- `http://` instead of `https://`
+- trailing slash (`https://pick6.app/`)
+- apex vs `www.` mismatch
+- stale `*.up.railway.app` after moving to a custom domain
+
+Update the `APP_URL` repo secret (and the Railway env var — keep them in
+sync) to the exact final URL with no trailing slash, then re-run the
+workflow.
+
+### Backup workflow fails with "not gzip" (no redirect)
 The app probably returned a JSON error instead of the binary. Check Railway
 logs. Most likely the server is rejecting the auth header (see above).
 

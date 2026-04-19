@@ -2,7 +2,7 @@
 
 > *"I'm not saying my golf game is bad, but if I grew tomatoes, they'd come up sliced."* — Lee Trevino
 
-The ultimate pick'em pool app for **every major championship in golf**. Pick 6 golfers across 4 tiers, and your best 5 of 6 combined to-par scores determine the winner. Live scoring. Zero spreadsheets. Finally, an excuse to watch golf at work. ⛳
+The ultimate pick'em pool app for **the biggest championships in golf**. Pick 6 golfers across 4 tiers, and your best 5 of 6 combined to-par scores determine the winner. Live scoring. Zero spreadsheets. Finally, a better way! ⛳
 
 ## 🌲 What Is This?
 
@@ -244,7 +244,7 @@ So don't worry about the last commit — focus on the next one.
 
 ## 📜 License
 
-MIT — use it, fork it, host your own pool. Just don't blame us when your Tier 4 pick misses the cut and your coworker won't stop talking about it until the next major.
+MIT ... use it, fork it, host your own pool. Just don't blame us when your Tier 4 pick misses the cut and your coworker won't stop talking about it until the next major.
 
 ---
 

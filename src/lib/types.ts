@@ -1,5 +1,5 @@
 // ==========================================
-// Masters Pick 6 — Core Types
+// Pick 6 Golf — Core Types
 // ==========================================
 
 export interface User {

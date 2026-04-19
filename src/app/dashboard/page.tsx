@@ -14,6 +14,7 @@ import {
   CheckIcon,
 } from "@/components/Icons";
 import { useTournament } from "@/components/TournamentProvider";
+import { getTournament } from "@/lib/tournaments/config";
 import TournamentBar from "@/components/TournamentBar";
 
 interface PoolInfo {
@@ -38,7 +39,7 @@ interface UserPick {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { tournament } = useTournament();
+  const { tournament, setTournament } = useTournament();
   const [user, setUser] = useState<{ userId: string; name: string } | null>(null);
   const [pools, setPools] = useState<PoolInfo[]>([]);
   const [activePoolId, setActivePoolId] = useState<string | null>(null);
@@ -52,6 +53,9 @@ export default function DashboardPage() {
   const [editingLockDate, setEditingLockDate] = useState(false);
   const [lockDateInput, setLockDateInput] = useState("");
   const [showCreateJoin, setShowCreateJoin] = useState(false);
+  const [collapsedTournaments, setCollapsedTournaments] = useState<Set<string>>(
+    new Set()
+  );
 
   // Admin actions
   const [transferTo, setTransferTo] = useState("");
@@ -298,7 +302,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* My Pools list — always visible */}
+      {/* My Pools list — grouped by tournament, collapsible */}
       <div className="card">
         <div className="card-header flex items-center justify-between">
           <h2 className="text-white font-bold flex items-center gap-2">🏌️ My Pools</h2>
@@ -321,36 +325,119 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {pools.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setActivePoolId(p.id);
-                    setShowCreateJoin(false);
-                    fetchAll(p.id);
-                  }}
-                  className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-colors ${
-                    p.id === activePoolId && !showCreateJoin
-                      ? "bg-t-primary/10 border border-t-primary/30"
-                      : "hover:bg-gray-50 border border-transparent"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-t-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-t-primary font-bold text-xs">{p.members.length}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-sm text-gray-900">{p.name}</span>
-                      <span className="text-xs text-gray-400 block">{p.members.length} member{p.members.length !== 1 ? "s" : ""}</span>
-                    </div>
-                  </div>
-                  {p.id === activePoolId && !showCreateJoin && (
-                    <span className="text-xs font-bold text-t-primary bg-t-cream px-2 py-0.5 rounded">Active</span>
-                  )}
-                </button>
-              ))}
-            </div>
+            (() => {
+              // Group pools by tournament slug
+              const groups = new Map<string, PoolInfo[]>();
+              for (const p of pools) {
+                const slug = p.tournamentSlug || "masters";
+                if (!groups.has(slug)) groups.set(slug, []);
+                groups.get(slug)!.push(p);
+              }
+              // Sort: currently-active tournament first, then alphabetical
+              const sortedSlugs = Array.from(groups.keys()).sort((a, b) => {
+                if (a === tournament.slug) return -1;
+                if (b === tournament.slug) return 1;
+                return getTournament(a).name.localeCompare(getTournament(b).name);
+              });
+
+              return (
+                <div className="space-y-3">
+                  {sortedSlugs.map((slug) => {
+                    const t = getTournament(slug);
+                    const groupPools = groups.get(slug)!;
+                    const isCollapsed = collapsedTournaments.has(slug);
+                    const hasActive = groupPools.some((p) => p.id === activePoolId);
+
+                    return (
+                      <div
+                        key={slug}
+                        className="border border-gray-200 rounded-lg overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCollapsedTournaments((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(slug)) next.delete(slug);
+                              else next.add(slug);
+                              return next;
+                            });
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
+                            hasActive ? "bg-t-cream" : "bg-gray-50 hover:bg-gray-100"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: t.theme.primary }}
+                            />
+                            <span className="font-bold text-sm text-gray-900">
+                              {t.name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {groupPools.length} pool{groupPools.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          <span className="text-gray-400 text-xs">
+                            {isCollapsed ? "▼" : "▲"}
+                          </span>
+                        </button>
+
+                        {!isCollapsed && (
+                          <div className="p-2 space-y-2 bg-white">
+                            {groupPools.map((p) => (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  setActivePoolId(p.id);
+                                  setShowCreateJoin(false);
+                                  // Sync tournament context to the selected pool's tournament
+                                  if (
+                                    p.tournamentSlug &&
+                                    p.tournamentSlug !== tournament.slug
+                                  ) {
+                                    setTournament(p.tournamentSlug);
+                                  }
+                                  fetchAll(p.id);
+                                }}
+                                className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-colors ${
+                                  p.id === activePoolId && !showCreateJoin
+                                    ? "bg-t-primary/10 border border-t-primary/30"
+                                    : "hover:bg-gray-50 border border-transparent"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-t-primary/10 rounded-full flex items-center justify-center">
+                                    <span className="text-t-primary font-bold text-xs">
+                                      {p.members.length}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-sm text-gray-900">
+                                      {p.name}
+                                    </span>
+                                    <span className="text-xs text-gray-400 block">
+                                      {p.members.length} member
+                                      {p.members.length !== 1 ? "s" : ""}
+                                    </span>
+                                  </div>
+                                </div>
+                                {p.id === activePoolId && !showCreateJoin && (
+                                  <span className="text-xs font-bold text-t-primary bg-t-cream px-2 py-0.5 rounded">
+                                    Active
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </div>
       </div>
@@ -730,7 +817,11 @@ export default function DashboardPage() {
 
           {/* Right column: Pool Standings */}
           <div className="lg:col-span-2">
-            <PoolStandings poolId={pool.id} />
+            <PoolStandings
+              poolId={pool.id}
+              poolName={pool.name}
+              tournamentName={getTournament(pool.tournamentSlug).name}
+            />
           </div>
         </div>
       ) : null}

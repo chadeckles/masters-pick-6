@@ -53,8 +53,8 @@ Pick Six Golf is a self-hosted web app for running golf major championship pools
 
 ```bash
 # Clone it
-git clone https://github.com/chadeckles/masters-pick-6.git
-cd masters-pick-6
+git clone https://github.com/chadeckles/pick6-golf.git
+cd pick6-golf
 
 # Install dependencies
 npm install
@@ -105,7 +105,7 @@ This app uses SQLite, so it needs a **persistent filesystem** — that rules out
 
 1. Sign up at [railway.app](https://railway.app) (free trial includes $5 credit — plenty for a pool)
 2. Click **"New Project"** → **"Deploy from GitHub Repo"**
-3. Select your `masters-pick-6` repository
+3. Select your `pick6-golf` repository
 4. Railway will immediately start building — let it run while you do the next steps
 
 ### Step 2: Set Environment Variables
@@ -115,7 +115,7 @@ Click into your service → **Variables** tab → add these **4 variables**:
 | Variable | Value | Why |
 |----------|-------|-----|
 | `JWT_SECRET` | *(see below)* | Signs auth tokens — keeps sessions secure |
-| `DATABASE_PATH` | `/data/masters-pick6.db` | Points to the persistent volume |
+| `DATABASE_PATH` | `/data/pick6-golf.db` | Points to the persistent volume |
 | `NODE_ENV` | `production` | Enables production optimizations |
 | `PORT` | `3000` | Railway defaults to 8080, but Next.js listens on 3000 |
 
@@ -139,7 +139,7 @@ Without a volume, your database (all users, pools, picks) gets **wiped on every 
 2. Click the **"+ New"** button on the canvas (or right-click on the canvas)
 3. Select **"Volume"**
 4. Set **Mount Path** to `/data`
-5. Click **"Attach volume to service"** → select `masters-pick-6`
+5. Click **"Attach volume to service"** → select `pick6-golf`
 6. Save — Railway will redeploy automatically
 
 ### Step 4: Set Up Public Networking
@@ -148,7 +148,7 @@ Without a volume, your database (all users, pools, picks) gets **wiped on every 
 2. Scroll to **Networking** → **Public Networking**
 3. Click **"Generate Domain"** — Railway gives you a free HTTPS URL like:
    ```
-   masters-pick-6-production.up.railway.app
+   pick6-golf-production.up.railway.app
    ```
 4. ⚡ **Port:** Make sure the port is set to **3000** (or whatever you set in the `PORT` variable). Railway may default to 8080 — update it to match.
 
@@ -231,7 +231,7 @@ Your best 5 of 6 scores count. That Tier 4 gamble on a past champion could win i
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `JWT_SECRET` | ✅ | Secret key for signing auth tokens. Generate a strong one. |
-| `DATABASE_PATH` | No | Path to SQLite file. Defaults to `./masters-pick6.db` |
+| `DATABASE_PATH` | No | Path to SQLite file. Defaults to `./pick6-golf.db` |
 | `NODE_ENV` | No | Set to `production` for deployed environments |
 
 ## 🤝 Contributing

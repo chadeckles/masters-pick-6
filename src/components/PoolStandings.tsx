@@ -4,7 +4,17 @@ import { useEffect, useState, useCallback, Fragment } from "react";
 import type { PoolEntry } from "@/lib/types";
 import { TrophyIcon } from "@/components/Icons";
 
-export default function PoolStandings({ poolId }: { poolId?: string } = {}) {
+interface PoolStandingsProps {
+  poolId?: string;
+  tournamentName?: string;
+  poolName?: string;
+}
+
+export default function PoolStandings({
+  poolId,
+  tournamentName,
+  poolName,
+}: PoolStandingsProps = {}) {
   const [standings, setStandings] = useState<PoolEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -57,10 +67,18 @@ export default function PoolStandings({ poolId }: { poolId?: string } = {}) {
   return (
     <div className="card">
       {/* Header */}
-      <div className="card-header flex items-center justify-between">
-        <h2 className="text-white font-bold text-lg flex items-center gap-2">
-          <TrophyIcon className="w-5 h-5" /> Pool Standings
-        </h2>
+      <div className="card-header flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col">
+          <h2 className="text-white font-bold text-lg flex items-center gap-2">
+            <TrophyIcon className="w-5 h-5" />
+            {poolName ? poolName : "Pool Standings"}
+          </h2>
+          {tournamentName && (
+            <span className="text-t-accent text-xs font-semibold uppercase tracking-wider mt-0.5">
+              {tournamentName}
+            </span>
+          )}
+        </div>
         {lastUpdate && (
           <span className="text-t-accent text-xs">
             Updated {lastUpdate.toLocaleTimeString()}

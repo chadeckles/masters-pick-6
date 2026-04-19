@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "masters-pick6.db");
+const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "pick6-golf.db");
 
 // Ensure the directory exists (critical for Railway persistent volumes)
 const dbDir = path.dirname(DB_PATH);

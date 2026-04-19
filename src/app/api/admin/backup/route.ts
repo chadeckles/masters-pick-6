@@ -66,9 +66,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Take the snapshot into a temp file, then stream+gzip it back.
-  const tmpRoot = path.join(tmpdir(), "mp6-backups");
+  const tmpRoot = path.join(tmpdir(), "pick6-backups");
   mkdirSync(tmpRoot, { recursive: true });
-  const snapName = `mp6-${Date.now()}-${randomBytes(4).toString("hex")}.db`;
+  const snapName = `pick6-${Date.now()}-${randomBytes(4).toString("hex")}.db`;
   const snapPath = path.join(tmpRoot, snapName);
 
   try {
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
   gzipped.on("error", cleanup);
   fileStream.on("error", cleanup);
 
-  const filename = `mp6-${new Date().toISOString().replace(/[:.]/g, "-")}.db.gz`;
+  const filename = `pick6-${new Date().toISOString().replace(/[:.]/g, "-")}.db.gz`;
 
   return new Response(Readable.toWeb(gzipped) as ReadableStream, {
     status: 200,

@@ -1,5 +1,5 @@
 /**
- * Masters Pick 6 — Consistent SVG icon set
+ * Pick 6 Golf — Consistent SVG icon set
  *
  * Replaces emojis with clean, professional icons that share a unified
  * visual language (stroke-based, consistent weight, Masters color palette).

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Masters Pick 6 — Nightly backup
+ * Pick 6 Golf — Nightly backup
  *
  * Takes a *consistent* snapshot of the SQLite database (safe to run while
  * the app is live), gzips it, writes it to BACKUP_DIR, and prunes snapshots
@@ -11,12 +11,12 @@
  *   npm run backup                    # same, via package.json
  *
  * ── Env ──────────────────────────────────────────────────────────────
- *   DATABASE_PATH    source .db (default: <repo>/masters-pick6.db)
+ *   DATABASE_PATH    source .db (default: <repo>/pick6-golf.db)
  *   BACKUP_DIR       destination dir (default: <repo>/backups)
  *   RETENTION_DAYS   how many days of snapshots to keep (default: 14)
  *
  *   # Optional — enable S3/R2 upload later without code changes:
- *   BACKUP_S3_BUCKET       e.g. "masters-pick6-backups"
+ *   BACKUP_S3_BUCKET       e.g. "pick6-golf-backups"
  *   BACKUP_S3_ENDPOINT     Cloudflare R2 / custom endpoint (optional)
  *   BACKUP_S3_REGION       e.g. "auto" for R2, "us-east-1" for AWS
  *   AWS_ACCESS_KEY_ID      access key
@@ -29,12 +29,12 @@
  *   volume your main service uses.
  *
  * On any other host with cron:
- *   15 2 * * *  cd /path/to/app && /usr/bin/node scripts/backup.js >> /var/log/mp6-backup.log 2>&1
+ *   15 2 * * *  cd /path/to/app && /usr/bin/node scripts/backup.js >> /var/log/pick6-backup.log 2>&1
  *
  * ── Restoring ────────────────────────────────────────────────────────
- *   gunzip -k backups/mp6-YYYY-MM-DD_HH-MM-SS.db.gz
- *   mv masters-pick6.db masters-pick6.db.bad
- *   mv backups/mp6-YYYY-MM-DD_HH-MM-SS.db masters-pick6.db
+ *   gunzip -k backups/pick6-YYYY-MM-DD_HH-MM-SS.db.gz
+ *   mv pick6-golf.db pick6-golf.db.bad
+ *   mv backups/pick6-YYYY-MM-DD_HH-MM-SS.db pick6-golf.db
  *   # restart the app
  */
 
@@ -45,12 +45,12 @@ const { pipeline } = require("stream/promises");
 const Database = require("better-sqlite3");
 
 const REPO_ROOT = path.join(__dirname, "..");
-const DB_PATH = process.env.DATABASE_PATH || path.join(REPO_ROOT, "masters-pick6.db");
+const DB_PATH = process.env.DATABASE_PATH || path.join(REPO_ROOT, "pick6-golf.db");
 const BACKUP_DIR = process.env.BACKUP_DIR || path.join(REPO_ROOT, "backups");
 const RETENTION_DAYS = Math.max(1, parseInt(process.env.RETENTION_DAYS || "14", 10));
 
-const FILE_PREFIX = "mp6-";
-const FILE_REGEX = /^mp6-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db(\.gz)?$/;
+const FILE_PREFIX = "pick6-";
+const FILE_REGEX = /^pick6-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db(\.gz)?$/;
 
 function log(msg) {
   console.log(`[backup ${new Date().toISOString()}] ${msg}`);

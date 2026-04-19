@@ -31,7 +31,7 @@ the canonical list.
 |---|---|---|
 | `JWT_SECRET` | **Yes** | Signs session cookies. Must be long + random. Generate with `openssl rand -base64 48`. Rotating it force-logs-out every user. |
 | `APP_URL` | Production | Canonical origin, e.g. `https://pick6.app` (no trailing slash). Used for CSRF origin checks and email links. Without it, CSRF will only allow `localhost` and production POSTs will 403. |
-| `DATABASE_PATH` | Production | Absolute path to the SQLite file on the Railway persistent volume, e.g. `/data/masters-pick6.db`. Dev falls back to `./masters-pick6.db`. |
+| `DATABASE_PATH` | Production | Absolute path to the SQLite file on the Railway persistent volume, e.g. `/data/pick6-golf.db`. Dev falls back to `./pick6-golf.db`. |
 | `BACKUP_API_KEY` | **Yes for backups** | Shared secret for the nightly backup job. Min 24 chars. Generate with `openssl rand -base64 32`. Also set as a GitHub repo secret with the SAME value. |
 | `EMAIL_PROVIDER` | Optional | Set to `resend` to actually send password-reset emails. Leave unset in dev — the reset link logs to the server console. |
 | `EMAIL_FROM` | If sending | e.g. `"Pick 6 Golf <noreply@yourdomain.com>"`. |
@@ -178,12 +178,12 @@ gets a 400. Unknown golfers (not in the field) are rejected entirely.
 **GitHub (recommended — same as the nightly run):**
 1. Actions tab → **Nightly DB backup** → **Run workflow** → Branch: `main` → **Run**
 2. ~30 seconds later, open the run → Artifacts → download
-   `mp6-db-backup-<n>` (a zip).
+   `pick6-db-backup-<n>` (a zip).
 
 **Local (against your dev DB):**
 ```bash
 npm run backup
-# → backups/mp6-2026-04-16_02-15-00.db.gz
+# → backups/pick6-2026-04-16_02-15-00.db.gz
 ```
 
 ### Restoring from a backup
@@ -195,14 +195,14 @@ learning it under pressure.
 2. **Unzip the GitHub artifact** (it's double-zipped — artifact zip contains
    your `.db.gz`):
    ```bash
-   unzip mp6-db-backup-42.zip
-   gunzip mp6-2026-04-16_07-15-22.db.gz
-   # → mp6-2026-04-16_07-15-22.db
+   unzip pick6-db-backup-42.zip
+   gunzip pick6-2026-04-16_07-15-22.db.gz
+   # → pick6-2026-04-16_07-15-22.db
    ```
 3. **Sanity-check** the file before touching production:
    ```bash
-   sqlite3 mp6-2026-04-16_07-15-22.db "SELECT COUNT(*) FROM users;"
-   sqlite3 mp6-2026-04-16_07-15-22.db "SELECT COUNT(*) FROM picks;"
+   sqlite3 pick6-2026-04-16_07-15-22.db "SELECT COUNT(*) FROM users;"
+   sqlite3 pick6-2026-04-16_07-15-22.db "SELECT COUNT(*) FROM picks;"
    ```
 4. **Stop the Railway service** (Service settings → Scale to 0 instances, or
    click "Stop"). **Critical** — never replace a live DB file.
@@ -220,9 +220,9 @@ learning it under pressure.
 ### Restore-from-dev shortcut (for testing only)
 
 ```bash
-cp masters-pick6.db masters-pick6.db.bak
-gunzip -k backups/mp6-2026-04-16_02-15-00.db.gz
-mv backups/mp6-2026-04-16_02-15-00.db masters-pick6.db
+cp pick6-golf.db pick6-golf.db.bak
+gunzip -k backups/pick6-2026-04-16_02-15-00.db.gz
+mv backups/pick6-2026-04-16_02-15-00.db pick6-golf.db
 npm run dev
 ```
 
